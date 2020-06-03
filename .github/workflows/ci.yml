@@ -1,0 +1,59 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  spec:
+    name: Spec
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby-version: [2.4.5, 2.5.3]
+        puppet-gem-version: ["~> 5.0", "~> 6.0"]
+        rubygems-version: [3.1.0]
+    env:
+      PUPPET_GEM_VERSION: ${{ matrix.puppet-gem-version }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby-version }}
+    - name: Update Rubygems
+      run: gem update --system ${{ matrix.rubygems-version }}
+    - name: Bundle Install
+      run: bundle install
+    - name: Acceptance tests
+      run: bundle exec rspec spec/acceptance
+  static:
+    name: Static
+    runs-on: ubuntu-latest
+    strategy:
+    env:
+      PUPPET_GEM_VERSION: "~> 6.0"
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 2.5.3
+    - name: Update Rubygems
+      run: gem update --system 3.1.0
+    - name: Bundle Install
+      run: bundle install
+    - name: Check symlinks
+      run: bundle exec rake check:symlinks
+    - name: Check .gitignore
+      run: bundle exec rake check:git_ignore
+    - name: Check dot_underscore
+      run: bundle exec rake check:dot_underscore
+    - name: Check dot_underscore
+      run: bundle exec rake check:test_file
+    - name: Rubocop
+      run: bundle exec rake rubocop
+    - name: Syntax
+      run: bundle exec rake syntax
+    - name: Lint
+      run: bundle exec rake lint
+    - name: Metadata lint
+      run: bundle exec rake metadata_lint
